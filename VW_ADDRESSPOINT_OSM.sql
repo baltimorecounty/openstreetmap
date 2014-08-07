@@ -1,9 +1,9 @@
-SELECT 
+SELECT
 ADP.SHAPE,
 AD.OBJECTID,
 TRIM(CONCAT(AD.ST_NUMBER || ' ',(TRIM(AD.ST_NUMSUFFIX) ||' ')))
 addr_housenumber,
-TRIM(
+ TRIM(
   CONCAT(
    TRIM(
     CONCAT(
@@ -17,13 +17,19 @@ TRIM(
             CONCAT(
              TRIM(
               DECODE(SN.ST_PREMOD, '1', 'OLD', '2', 'NEW')
-              ) || ' ',TRIM(SN.ST_PREFIXDIR)
+              ) || ' ',TRIM(
+                        DECODE(SN.ST_PREFIXDIR,
+                        'E','East',
+                        'N','North',
+                        'S','South',
+                        'W','West')
+              )
              )
             ) || ' ',TRIM(SN.ST_PREFIXTYPE)
            )
-          ) || ' ',TRIM(SN.ST_NAME)
+          ) || ' ',TRIM(REPLACE(INITCAP(SN.ST_NAME),'Mcc','McC'))
          )
-        ) || ' ',TRIM(
+        ) || ' ',TRIM(INITCAP(
                   DECODE(SN.ST_TYPE,
                   'ALY','ALLEY',
                   'AVE','AVENUE',
@@ -57,21 +63,28 @@ TRIM(
                   'WALK','WALK',
                   'WAY','WAY',
                   'PL','PLACE')
-                 )
+                 ))
        )
-      ) || ' ',TRIM(SN.ST_SUFFIXDIR)
+      ) || ' ',TRIM(
+                DECODE(SN.ST_SUFFIXDIR,
+                'E','East',
+                'N','North',
+                'S','South',
+                'W','West')
+      )
      )
     ) || ' ',TRIM(DECODE(SN.ST_POSTMOD, '1', 'EXTENDED'))
    )
   )
+ 
 addr_street,
 AD.STATE AS addr_state,
-Communityname.COUNTY_PREF AS addr_city,
-AD.ZIP AS addr_postal,
-DECODE(AD.STATUS, 'A', 'ACTIVE',
- 'I', 'INACTIVE',
- 'U', 'UNKNOWN') AS STATUS
+INITCAP(Communityname.COUNTY_PREF) AS addr_city,
+AD.ZIP AS addr_postal
 FROM AddressPoint ADP,Address AD,StreetName SN,CommunityName
 WHERE ADP.ADDRPT_ID (+) = AD.ADDRPT_ID
 AND SN.STNAME_ID = AD.STNAME_ID
-AND AD.ZIP = Communityname.ZIPCODE (+);
+AND AD.ZIP = Communityname.ZIPCODE (+)
+AND AD.STATUS = 'A'
+AND AD.ST_NUMBER != 0
+AND sn.st_name LIKE 'MC%';
